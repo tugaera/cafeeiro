@@ -1,7 +1,7 @@
 # cafeeiro
 Coffea 
 
-
+```javascript
 $('#calendar').fullCalendar('select', '2017-01-25') // Select a DAY
 
 
@@ -32,3 +32,4 @@ var eventExample = {
 			]
 		  }
 		};
+```
