@@ -65,6 +65,9 @@
 			}
 		});
 
+		/**
+		* Load FullCalendar
+		**/
 		$(function() {
 		// page is now ready, initialize the calendar...
 		  $('#calendar').fullCalendar({
@@ -126,7 +129,11 @@
 				
 			},
 			eventRender: function(event, element, view) {
-				// console.log(event);
+				// console.log("event: ", event, "\n element: ",element, "\n view:", view);
+				
+				// element[0].children[0].children[1].innerHTML = "<span name='event-title'>" + element[0].children[0].children[1].innerHTML + "</span>";
+				element.find(".fc-title")[0].innerHTML = "<span name='event-title'>" + element.find(".fc-title")[0].innerText + "</span>";
+				element.find(".fc-time").hide(); // Hide EVENT time
 				
 				var resp2 = getEventGAPI(event.id); // Get EVENT from list GAPI
 				
@@ -155,9 +162,17 @@
 				if (event.attendees && event.attendees.length > 0) {
 					for (i = 0; i < event.attendees.length; i++) {
 						// Show ATTENDEEE and how PAY
-						element.find(".fc-title").append(" <br>"
-							+(event.attendees[i].optional ? ' <i class="fas fa-shopping-cart"></i> ' : '')
-							+"<span>" + (event.attendees[i].displayName ? event.attendees[i].displayName : event.attendees[i].email.split("@")[0]) + "</span>" );
+						var tempAttendee = (event.attendees[i].optional ? ' <i class="fas fa-shopping-cart"></i> ' : '')
+											+ "<span>" + (event.attendees[i].displayName ? event.attendees[i].displayName : event.attendees[i].email.split("@")[0]) 
+											+ "</span>";
+						// Add how PAY first
+						if(event.attendees[i].optional){
+							element.find(".fc-title").prepend(tempAttendee + "<br>");
+							// Remove EVENT title
+							element.find("[name=event-title]").hide(); // element[0].children[0].children[1].innerHTML.replace(event.title,'');
+						} else {
+							element.find(".fc-title").append("<br>"+tempAttendee);
+						}
 					}
 				}
 
@@ -200,7 +215,9 @@
 		  });
 		});
 		
-		// Load the EVENTS from google calendar to fullCalendar
+		/**
+		* Load the EVENTS from google calendar to fullCalendar
+		**/
 		function loadEvents(load) { // true = addEventSource | false = removeEvents 
 			// Check if fullCalendar already redered/loaded
 			if($('#calendar').length == 0){
@@ -230,7 +247,9 @@
 			}
 		}
 		
-		// Get EVENT from list events GAPI
+		/**
+		* Get EVENT from list events GAPI
+		**/
 		function getEventGAPI(id) {
 			//listEventsGAPI.includes(event.id)
 			const result = listEventsGAPI.find( ele => ele.id === id );
