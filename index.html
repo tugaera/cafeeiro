@@ -59,6 +59,7 @@
 		var autenticado = false; // User with Login
 		var loaded = false; // FullCalendar Loaded
 		var yy = 0; // DUMMY counter
+		var estatisticas = [];
 	
 		$( document ).ready(function() {
 			console.log( "ready!" );
@@ -177,6 +178,9 @@
 						} else {
 							element.find(".fc-title").append("<br>"+tempAttendee);
 						}
+						
+						// READ Statistics
+						userStatistic(event.attendees[i].displayName, (event.attendees[i].optional ? 1 : 0), 1);
 					}
 				}
 
@@ -698,6 +702,31 @@
 		}
 	*/
 	
+	/**
+	* Alterar dados do Utilizador com estatisticas
+	*/
+	function userStatistic(user, pagou = 0, bebeu = 0) {
+		const oldData = estatisticas.find((u) => {
+			return u.id === user;
+		});
+		
+		var dataUser = {
+			id: user,
+			pagar: pagou,
+			beber: bebeu
+		};
+		
+		if (oldData != undefined) {
+			dataUser.pagar = dataUser.pagar + oldData.pagar;
+			dataUser.beber = dataUser.beber + oldData.beber;
+
+			var indexOf = estatisticas.indexOf(oldData);
+			estatisticas[indexOf] = dataUser;
+		} else {
+			estatisticas.push(dataUser);
+		}
+	}
+	
     </script>
 
     <script async defer src="https://apis.google.com/js/api.js"
@@ -736,7 +765,10 @@
 
 		<div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne" data-parent="#accordion">
 		  <div class="card-body">
-			<canvas id="myChart" width="400" height="400"></canvas>
+			<div class="chart-container" style="position: relative; height:40vh; width:80vw">
+				<!-- <canvas id="chart"></canvas> -->
+				<canvas id="myChart" width="400" height="400"></canvas>
+			</div>
 		  </div>
 		</div>
 	  </div>
@@ -769,12 +801,23 @@
 				rgbaColorI++;
 			}
 			
+			// Dados dos Graficos
+			var listUtilizador = []; // Lista de Utilizadores
+			var listPagar = []; // Lista de cafes pagos
+			var listBeber = []; // Lista de cafes bebeu
+			for(var estatisticasI = 0; estatisticasI < estatisticas.length; estatisticasI++) {
+				listUtilizador.push(estatisticas[i].id);
+				listPagar.push(estatisticas[i].pagar);
+				listBeber.push(estatisticas[i].beber);
+			}
+			
 			var ctx = document.getElementById("myChart").getContext('2d');
 			var myChart = new Chart(ctx, {
 				type: 'bar',
 				data: {
-					labels: ["Red", "Blue", "Yellow", "Green", "Purple"],
-					datasets: [{
+					labels: listUtilizador,
+					datasets: [
+					/*{
 						label: '# of Votes',
 						data: [12, 19, 3, 5, 2],
 						backgroundColor: [
@@ -785,7 +828,6 @@
 							'rgba(153, 102, 255, 0.2)',
 							'rgba(255, 159, 64, 0.2)'
 						],
-						//backgroundColor: rgbaBackgroundColor,
 						borderColor: [
 							'rgba(255,99,132,1)',
 							'rgba(54, 162, 235, 1)',
@@ -794,12 +836,18 @@
 							'rgba(153, 102, 255, 1)',
 							'rgba(255, 159, 64, 1)'
 						],
-						//borderColor: rgbaBorderColor,
+						borderWidth: 1
+					},*/
+					{
+						label: '# Bebeu',
+						data: listBeber,
+						backgroundColor: rgbaBackgroundColor,
+						borderColor: rgbaBorderColor,
 						borderWidth: 1
 					},
 					{
-						label: '# of Toque',
-						data: [3, 2, 5, 3 ,19],
+						label: '# Pagou',
+						data: listPagar,
 						backgroundColor: rgbaBackgroundColor,
 						borderColor: rgbaBorderColor,
 						borderWidth: 1
