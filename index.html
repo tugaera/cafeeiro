@@ -33,12 +33,16 @@
 <!-- <script type='text/javascript' src='fullcalendar-3.9.0/gcal.js'></script>-->
 <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/gcal.js'></script>
 
-
+<!-- bootstrap -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
+<!-- fontawesome -->
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+
+<!-- Chart.js -->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js'></script>
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js'></script>
 
 </head>
 
@@ -206,12 +210,12 @@
 				});
 
 			},
-			/*
+			
 			eventAfterAllRender: function(view) {
-				if(autenticado && !loaded){
-					loadEvents(true);
+				if(autenticado && loaded){
+					loadChart();
 				}
-			},*/
+			},
 		  });
 		});
 		
@@ -432,11 +436,14 @@
 
 		var firstday = new Date(curr.setDate(first));//.toUTCString();
 		var lastday = new Date(curr.setDate(last));//.toUTCString();
+		
+		var monthStartDay = new Date(curr.getFullYear(), curr.getMonth(), 1);
+		var monthEndDay = new Date(curr.getFullYear(), curr.getMonth() + 1, 0);
 	  
         gapi.client.calendar.events.list({
 		  'calendarId': CONFIG.CALENDAR_ID,
-          'timeMin': firstday.toISOString(),//(new Date()).toISOString(),
-		  'timeMax': lastday.toISOString(),
+          'timeMin': monthStartDay.toISOString(),//(new Date()).toISOString(),
+		  'timeMax': monthEndDay.toISOString(),
           'showDeleted': false,
           'singleEvents': true,
           'maxResults': 7,
@@ -714,6 +721,102 @@
 		.eventcolor9 {background-color: #e6ff99 !important;} /*verde lima*/
 		.eventcolor10 {background-color: #ffb3ff !important;} /*rosa*/
 	</style>
+	
+	<!-- Chart -->
+	
+	<div id="accordion" role="tablist">
+	  <div class="card">
+		<div class="card-header" role="tab" id="headingOne">
+		  <h5 class="mb-0">
+			<a data-toggle="collapse" href="#collapseOne" role="button" aria-expanded="true" aria-controls="collapseOne">
+			  Grafico #1
+			</a>
+		  </h5>
+		</div>
+
+		<div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne" data-parent="#accordion">
+		  <div class="card-body">
+			<canvas id="myChart" width="400" height="400"></canvas>
+		  </div>
+		</div>
+	  </div>
+	  <div class="card">
+		<div class="card-header" role="tab" id="headingThree">
+		  <h5 class="mb-0">
+			<a class="collapsed" data-toggle="collapse" href="#collapseThree" role="button" aria-expanded="false" aria-controls="collapseThree">
+			  Grafico #3
+			</a>
+		  </h5>
+		</div>
+		<div id="collapseThree" class="collapse" role="tabpanel" aria-labelledby="headingThree" data-parent="#accordion">
+		  <div class="card-body">
+			<canvas id="myChart2" width="400" height="400"></canvas>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	
+	<script>
+		function loadChart() {
+			// RGB Colors
+			var rgbaBackgroundColor = [] 
+			var rgbaBorderColor = [] 
+			var rgbaColorI = 1;
+			while($('.eventcolor'+rgbaColorI).css( "backgroundColor" ) != undefined) {
+				var tempRGBA = $('.eventcolor'+rgbaColorI).css( "backgroundColor" );
+				rgbaBackgroundColor.push(tempRGBA.slice(0,3)+"a"+tempRGBA.slice(3,-1)+", 0.3"+tempRGBA.slice(-1));
+				rgbaBorderColor.push(tempRGBA.slice(0,3)+"a"+tempRGBA.slice(3,-1)+", 1"+tempRGBA.slice(-1));
+				rgbaColorI++;
+			}
+			
+			var ctx = document.getElementById("myChart").getContext('2d');
+			var myChart = new Chart(ctx, {
+				type: 'bar',
+				data: {
+					labels: ["Red", "Blue", "Yellow", "Green", "Purple"],
+					datasets: [{
+						label: '# of Votes',
+						data: [12, 19, 3, 5, 2],
+						backgroundColor: [
+							'rgba(255, 99, 132, 0.2)',
+							'rgba(54, 162, 235, 0.2)',
+							'rgba(255, 206, 86, 0.2)',
+							'rgba(75, 192, 192, 0.2)',
+							'rgba(153, 102, 255, 0.2)',
+							'rgba(255, 159, 64, 0.2)'
+						],
+						//backgroundColor: rgbaBackgroundColor,
+						borderColor: [
+							'rgba(255,99,132,1)',
+							'rgba(54, 162, 235, 1)',
+							'rgba(255, 206, 86, 1)',
+							'rgba(75, 192, 192, 1)',
+							'rgba(153, 102, 255, 1)',
+							'rgba(255, 159, 64, 1)'
+						],
+						//borderColor: rgbaBorderColor,
+						borderWidth: 1
+					},
+					{
+						label: '# of Toque',
+						data: [3, 2, 5, 3 ,19],
+						backgroundColor: rgbaBackgroundColor,
+						borderColor: rgbaBorderColor,
+						borderWidth: 1
+					}]
+				},
+				options: {
+					scales: {
+						yAxes: [{
+							ticks: {
+								beginAtZero:true
+							}
+						}]
+					}
+				}
+			});
+		}
+	</script>
 
 </body>
 
