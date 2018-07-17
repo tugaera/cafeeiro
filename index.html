@@ -180,7 +180,7 @@
 						}
 						
 						// READ Statistics
-						userStatistic(event.attendees[i].displayName, (event.attendees[i].optional ? 1 : 0), 1);
+						// userStatistic(event.attendees[i].displayName, (event.attendees[i].optional ? 1 : 0), 1);
 					}
 				}
 
@@ -450,7 +450,7 @@
 		  'timeMax': monthEndDay.toISOString(),
           'showDeleted': false,
           'singleEvents': true,
-          'maxResults': 7,
+          'maxResults': 31,
           'orderBy': 'startTime'
         }).then(function(response) {
           var events = response.result.items;
@@ -459,7 +459,7 @@
 	
 		  // List EVENTS log
           if (events.length > 0) {
-            for (i = 0; i < events.length; i++) {
+            for (var i = 0; i < events.length; i++) {
               var event = events[i];
 			  //console.log("listUpcomingEvents attendees: ", event.attendees);
               var when = event.start.dateTime;
@@ -467,6 +467,11 @@
                 when = event.start.date;
               }
               appendPre('#' + event.id + ' - ' + event.summary + ' (' + when + ')')
+			  
+			  // READ Statistics
+			  if (event.attendees) 
+				for (var ii = 0; ii < event.attendees.length; ii++)
+					userStatistic(event.attendees[ii].displayName, (event.attendees[ii].optional ? 1 : 0), 1);
             }
           } else {
             appendPre('No upcoming events found.');
@@ -765,7 +770,7 @@
 
 		<div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne" data-parent="#accordion">
 		  <div class="card-body">
-			<div class="chart-container" style="position: relative; height:40vh; width:80vw">
+			<div class="chart-container" class="myChartDiv" style="position: relative; height:40vh; width:80vw">
 				<!-- <canvas id="chart"></canvas> -->
 				<canvas id="myChart" width="400" height="400"></canvas>
 			</div>
@@ -788,6 +793,13 @@
 	  </div>
 	</div>
 	
+	<style>
+		.myChartDiv {
+		  max-width: 600px;
+		  max-height: 400px;
+		}
+	</style>
+	
 	<script>
 		function loadChart() {
 			// RGB Colors
@@ -806,9 +818,9 @@
 			var listPagar = []; // Lista de cafes pagos
 			var listBeber = []; // Lista de cafes bebeu
 			for(var estatisticasI = 0; estatisticasI < estatisticas.length; estatisticasI++) {
-				listUtilizador.push(estatisticas[i].id);
-				listPagar.push(estatisticas[i].pagar);
-				listBeber.push(estatisticas[i].beber);
+				listUtilizador.push(estatisticas[estatisticasI].id);
+				listPagar.push(estatisticas[estatisticasI].pagar);
+				listBeber.push(estatisticas[estatisticasI].beber);
 			}
 			
 			var ctx = document.getElementById("myChart").getContext('2d');
@@ -854,6 +866,8 @@
 					}]
 				},
 				options: {
+					responsive: true, 
+					maintainAspectRatio: false,
 					scales: {
 						yAxes: [{
 							ticks: {
@@ -865,7 +879,7 @@
 			});
 		}
 	</script>
-
+	
 </body>
 
 </html>
