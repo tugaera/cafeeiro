@@ -1,0 +1,8 @@
+{
+	"CLIENT_ID": "Client ID from the Developer Console",
+    "API_KEY": "API key from the Developer Console",
+	"CALENDAR_ID": "Calendar ID as mail",
+    "DISCOVERY_DOCS": ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
+    "SCOPES": "https://www.googleapis.com/auth/calendar",
+	"SCOPES_READONLY": "https://www.googleapis.com/auth/calendar.readonly"
+}

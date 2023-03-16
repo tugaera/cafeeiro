@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script>
+	// Load JSON config.json
+	var CONFIG = {};
+	var xobj = new XMLHttpRequest();
+        xobj.overrideMimeType("application/json");
+    xobj.open('GET', 'config.json', true); // json file
+    xobj.onreadystatechange = function () {
+          if (xobj.readyState == 4 && xobj.status == "200") {
+            // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
+            // callback(xobj.responseText);
+			CONFIG = JSON.parse(xobj.responseText);
+          }
+    };
+    xobj.send(null);  
+</script>
+
+<meta charset="UTF-8">
+<title>Cafeeiro APP</title>
+
+<!-- <link rel='stylesheet' href='fullcalendar-3.9.0/fullcalendar.css' /> -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/fullcalendar.min.css">
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/fullcalendar.print.css"> -->
+<!-- <script src='fullcalendar-3.9.0/lib/jquery.min.js'></script> -->
+<script type='text/javascript' src='https://code.jquery.com/jquery-3.3.1.min.js'></script>
+<!-- <script src='fullcalendar-3.9.0/lib/moment.min.js'></script> -->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js'></script>
+<!-- <script src='fullcalendar-3.9.0/fullcalendar.js'></script> -->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/fullcalendar.min.js'></script>
+<!-- <script type='text/javascript' src='fullcalendar-3.9.0/gcal.js'></script>-->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/gcal.js'></script>
+
+<!-- bootstrap -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<!-- fontawesome -->
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+
+<!-- Chart.js -->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js'></script>
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js'></script>
+
+</head>
+
+<body>
+	<!-- div calendar -->
+	<div id='calendar'></div>
+
+	<!-- document ready -->
+	<script type='text/javascript'>
+		var selectEvent = null; // Selected EVENT when click
+		var selectDay = null; // Selected DAY when click
+		var listEventsGAPI = []; // List of EVENTS from GAPI
+		var listEventsColor = []; // List of color EVENTS
+		var autenticado = false; // User with Login
+		var loaded = false; // FullCalendar Loaded
+		var yy = 0; // DUMMY counter
+		var estatisticas = [];
+	
+		$( document ).ready(function() {
+			console.log( "ready!" );
+			
+			// Show WEB console
+			if(window.location.href.includes("dev")) {
+				document.getElementById('content').style.display = 'block';
+			}
+		});
+
+		/**
+		* Load FullCalendar
+		**/
+		$(function() {
+		// page is now ready, initialize the calendar...
+		  $('#calendar').fullCalendar({
+			timezone: 'local',
+			// put your options and callbacks here
+			weekends: true, // will hide Saturdays and Sundays
+			googleCalendarApiKey: CONFIG.API_KEY,
+			// Uncomment to load EVENTS on init
+			/*
+			events: {
+			  googleCalendarId: CONFIG.CALENDAR_ID,
+			  className: 'gcal-event', // an option!
+			  color: 'yellow',   // an option!
+			  textColor: 'black', // an option!
+			  editable: false,
+			  resourceEditable: false,
+			  startEditable: false,
+			  
+			},*/
+			header: {
+				center: 'month,agendaFiveDay,agendaWeek,basic,agenda,week,day' // buttons for switching between views
+			},
+			views: {
+				month: { // name of view
+					titleFormat: 'YYYY, MM, DD'
+					// other view-specific options here
+				},
+				agendaFiveDay: {
+					type: 'agenda',
+					duration: { days: 5 },
+					buttonText: '5 day'
+				}
+			},
+			dragOpacity: {
+				month: .2,
+				'default': .5
+			},
+			eventClick: function(calEvent, jsEvent, view) {
+				selectEvent = calEvent; // Selected EVENT
+				
+				// console.log('Event: ' + calEvent.title);
+				// console.log(calEvent);
+				// console.log('Coordinates: ' + jsEvent.pageX + ',' + jsEvent.pageY);
+				// console.log('View: ' + view.name);
+
+				// change the border color
+				// $(this).css('border-color', 'red');
+				$(".fc-state-highlight-event").removeClass("fc-state-highlight-event");
+				$(this).addClass("fc-state-highlight-event");
+				
+				return false; // Return false, don't open the link
+				
+				if (calEvent.url) {
+					// window.open(calEvent.url, '_blank')
+					// opens events in a popup window
+					window.open(calEvent.url, 'gcalevent', 'width=700,height=600');
+					return false;
+				}
+				
+			},
+			eventRender: function(event, element, view) {
+				// console.log("event: ", event, "\n element: ",element, "\n view:", view);
+				
+				// element[0].children[0].children[1].innerHTML = "<span name='event-title'>" + element[0].children[0].children[1].innerHTML + "</span>";
+				element.find(".fc-title")[0].innerHTML = "<span name='event-title'>" + element.find(".fc-title")[0].innerText + "</span>";
+				element.find(".fc-time").hide(); // Hide EVENT time
+				
+				var resp2 = getEventGAPI(event.id); // Get EVENT from list GAPI
+				
+				if(resp2 && resp2.attendees)
+					event.attendees = resp2.attendees;
+				
+				// Add popover with more information
+				$(element).popover({
+					trigger: 'hover',
+					title: event.title,
+					content: (event.location || "") + " \n " + 
+								(event.description || ""),
+					placement: 'top',
+					container: 'body'
+				});
+				
+				// Change color of the event 
+				if(!listEventsColor.includes(event.title)) {
+					listEventsColor.push(event.title);
+				} 
+				event.eventcolor = "eventcolor"+listEventsColor.indexOf(event.title);
+				
+				event.className = [event.eventcolor]; // add CLASS Name to EVENT
+				element.addClass(event.eventcolor); // add CLASS to ELEMENT
+				
+				if (event.attendees && event.attendees.length > 0) {
+					for (i = 0; i < event.attendees.length; i++) {
+						// Show ATTENDEEE and how PAY
+						var tempAttendee = (event.attendees[i].optional ? ' <i class="fas fa-shopping-cart"></i> ' : '')
+											+ "<span>" + (event.attendees[i].displayName ? event.attendees[i].displayName : event.attendees[i].email.split("@")[0]) 
+											+ "</span>";
+						// Add how PAY first
+						if(event.attendees[i].optional){
+							element.find(".fc-title").prepend(tempAttendee + "<br>");
+							// Remove EVENT title
+							element.find("[name=event-title]").hide(); // element[0].children[0].children[1].innerHTML.replace(event.title,'');
+						} else {
+							element.find(".fc-title").append("<br>"+tempAttendee);
+						}
+						
+						// READ Statistics
+						// userStatistic(event.attendees[i].displayName, (event.attendees[i].optional ? 1 : 0), 1);
+					}
+				}
+
+				// Update EVENT in fullCalendar
+				if(!event.insert) {
+					//console.info("UPDATE #1-"+ yy++ +" event: ", event);
+					event.insert = true;
+					$('#calendar').fullCalendar('updateEvent', event);
+				}
+				
+			},
+			dayClick: function(date, jsEvent, view) {
+				selectDay = date; // Selected DAY
+				
+				// console.log('Clicked on: ' + date.format());
+				// console.log('Coordinates: ' + jsEvent.pageX + ',' + jsEvent.pageY);
+				// console.log('Current view: ' + view.name);
+
+				// change the day's background color
+				$(".fc-state-highlight").removeClass("fc-state-highlight");
+				$(jsEvent.target).addClass("fc-state-highlight");
+				
+				// Find the EVENT of the selected DAY
+				$('#calendar').fullCalendar('clientEvents', function(event) {
+					// Match the event date with clicked date
+					// if(event.start.setHours(0, 0, 0, 0) === date.setHours(0, 0, 0, 0); ) {
+					if (moment(date).format('YYYY-MM-DD') == moment(event.start).format('YYYY-MM-DD')) { //event._start
+					  // console.log(event.title);
+					  selectEvent = event;
+					}
+				});
+
+			},
+			
+			eventAfterAllRender: function(view) {
+				if(autenticado && loaded){
+					loadChart();
+				}
+			},
+		  });
+		});
+		
+		/**
+		* Load the EVENTS from google calendar to fullCalendar
+		**/
+		function loadEvents(load) { // true = addEventSource | false = removeEvents 
+			// Check if fullCalendar already redered/loaded
+			if($('#calendar').length == 0){
+				console.warn("NO Calendar loaded");
+				return false;
+			}
+			
+			// Check if authenticated user OR already loaded
+			if(!load || !autenticado) {
+				$('#calendar').fullCalendar('removeEvents');
+				loaded = false;
+			} else {
+
+				$('#calendar').fullCalendar('removeEvents');
+				$('#calendar').fullCalendar('addEventSource', {
+					googleCalendarId: CONFIG.CALENDAR_ID,
+					className: 'gcal-event', // an option!
+					color: 'yellow',   // an option!
+					textColor: 'black', // an option!
+					editable: true,
+					resourceEditable: true,
+					startEditable: true,
+					  
+				});         
+				$('#calendar').fullCalendar('rerenderEvents' );
+				loaded = true;
+			}
+		}
+		
+		/**
+		* Get EVENT from list events GAPI
+		**/
+		function getEventGAPI(id) {
+			//listEventsGAPI.includes(event.id)
+			const result = listEventsGAPI.find( ele => ele.id === id );
+			if(result) {
+				return result;
+			}
+			
+			return null;
+		}
+
+	</script>
+
+<script src="https://apis.google.com/js/api.js"></script>
+
+	<p>Google Calendar API Quickstart</p>
+	
+	<div class="alert alert-warning alert-dismissible fade show" role="alert">
+		First Select <strong>EVENT</strong>.
+		<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+			<span aria-hidden="true">&times;</span>
+		</button>
+	</div>
+
+	<p>
+		<!--Add buttons to initiate auth sequence and sign out-->
+		<button id="authorize_button" class="btn btn-primary" style="display: none;">Authorize</button>
+		<button id="signout_button" class="btn btn-danger" style="display: none;">Sign Out</button>
+	
+		<!-- JOIN EVENT -->
+		<button id="test_button" onclick="joinEvent('#spinner_cafe')" 
+			style="" class="btn btn-success" type="button">TOMEI Cafe <i class="fa fa-spinner fa-spin" style="display: none;" id="spinner_cafe"></i></button>
+
+		<!-- JOIN and PAY EVENT -->
+		<button id="test_button" onclick="payEvent('#spinner_pay')" 
+			style="" class="btn btn-warning" type="button">PAGUEI Cafe <i class="fa fa-spinner fa-spin" style="display: none;" id="spinner_pay"></i></button>
+			
+		<button class="btn btn-light" type="button" 
+			data-toggle="collapse" data-target="#collapseExample" 
+			aria-expanded="false" aria-controls="collapseExample">
+			INSERT / UPDATE dia
+		</button>
+		
+		<button class="btn btn-light" type="button" 
+			data-toggle="collapse" data-target="#collapseExample2" 
+			aria-expanded="false" aria-controls="collapseExample2">
+			INSERT user
+		</button>
+		
+		
+	</p>
+	<!-- ADD EVENT-->
+	<div class="collapse" id="collapseExample">
+		<div class="card card-body">
+			<label for="lastname">Name:<label> <input type="text" name="lastname" id="lastname" value="">
+		</div>
+		<button id="test_button" onclick="createDay('#spinner_day')" 
+			style="" class="btn btn-info" type="button">Adicionar Cafe <i class="fa fa-spinner fa-spin" style="display: none;" id="spinner_day"></i></button>
+		
+	</div>
+	<!-- ADD USER -->
+	<div class="collapse" id="collapseExample2">
+		<div class="card card-body">
+			<label for="email">Email:<label> <input type="text" name="email" id="email" value="">
+		</div>
+		<button id="test_button" onclick="insertUser('#spinner_user')" 
+			style="" class="btn btn-info" type="button">Adicionar user <i class="fa fa-spinner fa-spin" style="display: none;" id="spinner_user"></i></button>
+		
+	</div>
+
+	<!-- WEB LOGS -->
+    <pre id="content" style="display:none;"></pre>
+
+    <script type="text/javascript">
+	
+      // Client ID and API key from the Developer Console
+      // var CLIENT_ID = CONFIG.CLIENT_ID;
+      // var API_KEY = CONFIG.API_KEY;
+	  // var CALENDAR_ID = CONFIG.CALENDAR_ID;
+      // Array of API discovery doc URLs for APIs used by the quickstart
+      // var DISCOVERY_DOCS = CONFIG.DISCOVERY_DOCS;
+      // Authorization scopes required by the API; multiple scopes can be
+      // included, separated by spaces.
+      // var SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+	  // var SCOPES = CONFIG.SCOPES;
+
+      var authorizeButton = document.getElementById('authorize_button');
+      var signoutButton = document.getElementById('signout_button');
+
+	  var name = null; // Name from USER
+	  var email = null; // Email from USER
+      /**
+       *  On load, called to load the auth2 library and API client library.
+       */
+      function handleClientLoad() {
+        gapi.load('client:auth2', initClient);
+      }
+
+      /**
+       *  Initializes the API client library and sets up sign-in state
+       *  listeners.
+       */
+      function initClient() {
+        gapi.client.init({
+          apiKey: CONFIG.API_KEY,
+          clientId: CONFIG.CLIENT_ID,
+          discoveryDocs: CONFIG.DISCOVERY_DOCS,
+          scope: CONFIG.SCOPES
+        }).then(function () {
+          // Listen for sign-in state changes.
+          gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+
+          // Handle the initial sign-in state.
+          updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+          authorizeButton.onclick = handleAuthClick;
+          signoutButton.onclick = handleSignoutClick;
+		  
+        });
+      }
+
+      /**
+       *  Called when the signed in status changes, to update the UI
+       *  appropriately. After a sign-in, the API is called.
+       */
+      function updateSigninStatus(isSignedIn) {
+        if (isSignedIn) {
+          authorizeButton.style.display = 'none';
+          signoutButton.style.display = 'inline'; // block
+		  name = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getName();
+		  email = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail();
+          listUpcomingEvents();
+		  
+		  autenticado = true; // User autenticated
+        } else {
+          authorizeButton.style.display = 'inline'; // block
+          signoutButton.style.display = 'none';
+		  
+		  name = null;
+		  email = null;
+		  autenticado = false; // User autenticated
+		  loadEvents(false); // Remove EVENTS
+        }
+      }
+
+      /**
+       *  Sign in the user upon button click.
+       */
+      function handleAuthClick(event) {
+        gapi.auth2.getAuthInstance().signIn();
+      }
+
+      /**
+       *  Sign out the user upon button click.
+       */
+      function handleSignoutClick(event) {
+        gapi.auth2.getAuthInstance().signOut();
+      }
+
+      /**
+       * Append a pre element to the body containing the given message
+       * as its text node. Used to display the results of the API call.
+       *
+       * @param {string} message Text to be placed in pre element.
+       */
+      function appendPre(message) {
+        var pre = document.getElementById('content');
+        var textContent = document.createTextNode(message + '\n');
+        pre.appendChild(textContent);
+      }
+
+      /**
+       * Print the summary and start datetime/date of the next ten events in
+       * the authorized user's calendar. If no events are found an
+       * appropriate message is printed.
+       */
+      function listUpcomingEvents() {
+		// Calculate first day of week
+		var curr = new Date; // get current date
+		var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+		var last = first + 6; // last day is the first day + 6
+
+		var firstday = new Date(curr.setDate(first));//.toUTCString();
+		var lastday = new Date(curr.setDate(last));//.toUTCString();
+		
+		var monthStartDay = new Date(curr.getFullYear(), curr.getMonth(), 1);
+		var monthEndDay = new Date(curr.getFullYear(), curr.getMonth() + 1, 0);
+	  
+        gapi.client.calendar.events.list({
+		  'calendarId': CONFIG.CALENDAR_ID,
+          'timeMin': monthStartDay.toISOString(),//(new Date()).toISOString(),
+		  'timeMax': monthEndDay.toISOString(),
+          'showDeleted': false,
+          'singleEvents': true,
+          'maxResults': 31,
+          'orderBy': 'startTime'
+        }).then(function(response) {
+          var events = response.result.items;
+		  listEventsGAPI = response.result.items;
+          appendPre('Upcoming events:');
+	
+		  // List EVENTS log
+          if (events.length > 0) {
+            for (var i = 0; i < events.length; i++) {
+              var event = events[i];
+			  //console.log("listUpcomingEvents attendees: ", event.attendees);
+              var when = event.start.dateTime;
+              if (!when) {
+                when = event.start.date;
+              }
+              appendPre('#' + event.id + ' - ' + event.summary + ' (' + when + ')')
+			  
+			  // READ Statistics
+			  if (event.attendees) 
+				for (var ii = 0; ii < event.attendees.length; ii++)
+					userStatistic(event.attendees[ii].displayName, (event.attendees[ii].optional ? 1 : 0), 1);
+            }
+          } else {
+            appendPre('No upcoming events found.');
+          }
+		  
+		  loadEvents(true); // Load EVENTS in fullcalendar
+        });
+      }
+
+	// Create DAY in calendar
+	function createDay(spinner) {
+	
+		if(email != "softinsa.pt@gmail.com" && email != "hashtagviseu@gmail.com"){ // Limit USERS access
+			console.warn("NOT VALID email", email );
+			return false
+		}
+		
+		$(spinner).show();
+		var eventName = document.getElementById('lastname').value;
+		
+		var event = {
+		  'summary': eventName,
+		  'location': 'Bombas',
+		  'description': 'test1234',
+		  'start': {
+			'dateTime': selectDay.format()+'T13:00:00-07:00',
+			'timeZone': 'Europe/Lisbon'
+		  },
+		  'end': {
+			'dateTime': selectDay.format()+'T14:00:00-07:00',
+			'timeZone': 'Europe/Lisbon'
+		  }
+		};
+
+
+		var request = gapi.client.calendar.events.insert({
+		  'calendarId': CONFIG.CALENDAR_ID,
+		  'resource': event
+		});
+
+		request.execute(function(event2) {
+		  appendPre('Event created: ' + event2.htmlLink);
+		  
+		  // !FIX! Better only add new event
+		  loadEvents(true); // Reload EVENTS
+			
+		  $(spinner).hide();
+		});
+	}
+	
+	// Patch EVENT with USER attendee
+	function joinEvent(spinner) {
+		if(!name || !email){
+			console.warn("NO name & NO email", name, email );
+			return false;
+		}
+		
+		$(spinner).show();
+		// console.log("selectEvent: ", selectEvent);
+		
+		var event = gapi.client.calendar.events.get({
+			"calendarId": CONFIG.CALENDAR_ID, 
+			"eventId": selectEvent.id
+		});
+		
+		// Load existing attendee
+		if(selectEvent.attendees == undefined){
+			selectEvent.attendees = [];
+			event.attendees = selectEvent.attendees;
+		} else {
+			event.attendees = selectEvent.attendees;
+		}
+		// Add new attendee
+		event.attendees.push({
+			'displayName':name,
+			'email': email,
+			'comment':'beber',
+			'additionalGuests':0,
+			'optional':false,
+			'resource':false,
+			'responseStatus':'needsAction', //needsAction, declined, tentative, accepted
+		});
+		
+		// console.log("joinEvent() event: ", event);
+
+		var request = gapi.client.calendar.events.patch({
+			'calendarId': CONFIG.CALENDAR_ID,
+			'eventId': selectEvent.id,
+			'resource': event
+		});
+		
+		request.execute(function (event2) {
+		   //console.log("joinEvent() event2: ", event2);
+		   appendPre('Event created: ' + event2.htmlLink);
+			
+			event.insert = false; // Reload Event
+			event.attendees = event2.attendees;
+			
+			// Add new EVENT to list GAPI
+			var foundIndex = listEventsGAPI.findIndex(ele => ele.id == event2.id);
+			if(foundIndex)
+				listEventsGAPI[foundIndex] = event2;
+			else 
+				listEventsGAPI.push(event2);
+			
+			$('#calendar').fullCalendar('updateEvent', event)
+			$('#calendar').fullCalendar('renderEvent', event, true);
+			$('#calendar').fullCalendar('rerenderEvents' );
+			
+			//$('#calendar').fullCalendar( 'refetchEvents' );
+		
+			$(spinner).hide();
+		});
+	}
+	
+	// Add USER to the Calendar
+	function insertUser(spinner) {
+		if(!name || !email){
+			console.warn("NO name & NO email", name, email );
+			return false;
+		}
+		if(email != "softinsa.pt@gmail.com" && email != "hashtagviseu@gmail.com"){
+			console.warn("NOT VALID email", email );
+			return false
+		}
+		$(spinner).show();
+		var emailUser = document.getElementById('email').value;
+		
+		var req = {
+			"calendarId": CONFIG.CALENDAR_ID,
+			"resource": {
+				"role": "writer", //none, freeBusyReader, reader, writer, owner
+				"scope": {
+					"type": "user", //default, user, group, domain
+					"value": emailUser
+				}
+			}
+		}
+		var request = gapi.client.calendar.acl.insert(req);
+		request.execute(function(resp) {
+			//console.log(resp);
+			appendPre('User ADD '+resp.result.role+': ' + resp.id);
+			$(spinner).hide();
+		});
+	}
+	
+	// Join EVENT and PAY
+	function payEvent(spinner) {
+		if(!name || !email){
+			console.warn("NO name & NO email", name, email );
+			return false;
+		}
+		
+		// console.log("selectEvent: ", selectEvent);
+		$(spinner).show();
+		
+		var event = gapi.client.calendar.events.get({
+			"calendarId": CONFIG.CALENDAR_ID, 
+			"eventId": selectEvent.id
+		});
+		
+		if(selectEvent.attendees == undefined){
+			selectEvent.attendees = [];
+			event.attendees = selectEvent.attendees;
+		} else {
+			event.attendees = selectEvent.attendees;
+		}
+		var attendee = {
+			'displayName':name,
+			'email': email,
+			'comment':'pagar',
+			'additionalGuests':0,
+			'optional':true,
+			'resource':false,
+			'responseStatus':'accepted', //needsAction, declined, tentative, accepted
+		};
+		
+		if(event.attendees && event.attendees.length)
+			for (i = 0; i < event.attendees.length; i++) {
+				// Someone already paid
+				if(event.attendees[i].optional) {
+					event.attendees[i].responseStatus = 'tentative'; // ?? already PAID ??
+					event.attendees[i].comment = 'pagar - ' + name; // How is paing now
+					event.attendees[i].optional = false;
+				}
+			}
+			
+		// Update or Insert me as attendee
+		var foundIndex = event.attendees.findIndex(ele => ele.email == attendee.email);
+		if(foundIndex >= 0)
+			event.attendees[foundIndex] = attendee;
+		else 
+			event.attendees.push(attendee);
+		
+		// console.log("event: ", event);
+
+		var request = gapi.client.calendar.events.patch({
+			'calendarId': CONFIG.CALENDAR_ID,
+			'eventId': selectEvent.id,
+			'resource': event
+		});
+		
+		request.execute(function (event2) {
+		   //console.log("payEvent() event2: ", event2);
+		   appendPre('Event created: ' + event2.htmlLink);
+			
+			event.insert = false;
+			event.attendees = event2.attendees;
+
+			// Add new EVENT to list GAPI
+			var foundIndex = listEventsGAPI.findIndex(ele => ele.id == event2.id);
+			if(foundIndex >=0)
+				listEventsGAPI[foundIndex] = event2;
+			else 
+				listEventsGAPI.push(event2);
+			
+			$('#calendar').fullCalendar('updateEvent', event)
+			$('#calendar').fullCalendar('renderEvent', event, true);
+			$('#calendar').fullCalendar('rerenderEvents' );
+			
+			//$('#calendar').fullCalendar( 'refetchEvents' );
+		
+			$(spinner).hide();
+		});
+	}
+	
+	/*
+		var listEvents = []; // List of Render EVENTS
+		listEvents = [];
+		var index = listEvents.indexOf(selectEvent.id);
+		if (index > -1) {
+			listEvents.splice(index, 1);
+		}
+	*/
+	
+	/**
+	* Alterar dados do Utilizador com estatisticas
+	*/
+	function userStatistic(user, pagou = 0, bebeu = 0) {
+		const oldData = estatisticas.find((u) => {
+			return u.id === user;
+		});
+		
+		var dataUser = {
+			id: user,
+			pagar: pagou,
+			beber: bebeu
+		};
+		
+		if (oldData != undefined) {
+			dataUser.pagar = dataUser.pagar + oldData.pagar;
+			dataUser.beber = dataUser.beber + oldData.beber;
+
+			var indexOf = estatisticas.indexOf(oldData);
+			estatisticas[indexOf] = dataUser;
+		} else {
+			estatisticas.push(dataUser);
+		}
+	}
+	
+    </script>
+
+    <script async defer src="https://apis.google.com/js/api.js"
+      onload="this.onload=function(){};handleClientLoad()"
+      onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
+
+	<style>
+		.fc-state-highlight {background:#ffcccc !important;}
+		
+		.fc-state-highlight-event {border-color:#ff9999 !important;}
+		
+		.eventcolor1 {background-color: #d5ddd5 !important;} /*cinza*/
+		.eventcolor2 {background-color: #b3ffb3 !important;} /*verde*/
+		.eventcolor3 {background-color: #ffd9b3 !important;} /*laranja*/
+		.eventcolor4 {background-color: #b3d9ff !important;} /*azul*/
+		.eventcolor5 {background-color: #d9b3ff !important;} /*violeta*/
+		.eventcolor6 {background-color: #ffffb3 !important;} /*amarelo*/
+		.eventcolor7 {background-color: #d2a679 !important;} /*castanho*/
+		.eventcolor8 {background-color: #b3ffff !important;} /*azul ceu*/
+		.eventcolor9 {background-color: #e6ff99 !important;} /*verde lima*/
+		.eventcolor10 {background-color: #ffb3ff !important;} /*rosa*/
+	</style>
+	
+	<!-- Chart -->
+	
+	<div id="accordion" role="tablist">
+	  <div class="card">
+		<div class="card-header" role="tab" id="headingOne">
+		  <h5 class="mb-0">
+			<a data-toggle="collapse" href="#collapseOne" role="button" aria-expanded="true" aria-controls="collapseOne">
+			  Grafico #1
+			</a>
+		  </h5>
+		</div>
+
+		<div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne" data-parent="#accordion">
+		  <div class="card-body">
+			<div class="chart-container" class="myChartDiv" style="position: relative; height:40vh; width:80vw">
+				<!-- <canvas id="chart"></canvas> -->
+				<canvas id="myChart" width="400" height="400"></canvas>
+			</div>
+		  </div>
+		</div>
+	  </div>
+	  <div class="card">
+		<div class="card-header" role="tab" id="headingThree">
+		  <h5 class="mb-0">
+			<a class="collapsed" data-toggle="collapse" href="#collapseThree" role="button" aria-expanded="false" aria-controls="collapseThree">
+			  Grafico #3
+			</a>
+		  </h5>
+		</div>
+		<div id="collapseThree" class="collapse" role="tabpanel" aria-labelledby="headingThree" data-parent="#accordion">
+		  <div class="card-body">
+			<canvas id="myChart2" width="400" height="400"></canvas>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	
+	<style>
+		.myChartDiv {
+		  max-width: 600px;
+		  max-height: 400px;
+		}
+	</style>
+	
+	<script>
+		function loadChart() {
+			// RGB Colors
+			var rgbaBackgroundColor = [] 
+			var rgbaBorderColor = [] 
+			var rgbaColorI = 1;
+			while($('.eventcolor'+rgbaColorI).css( "backgroundColor" ) != undefined) {
+				var tempRGBA = $('.eventcolor'+rgbaColorI).css( "backgroundColor" );
+				rgbaBackgroundColor.push(tempRGBA.slice(0,3)+"a"+tempRGBA.slice(3,-1)+", 0.3"+tempRGBA.slice(-1));
+				rgbaBorderColor.push(tempRGBA.slice(0,3)+"a"+tempRGBA.slice(3,-1)+", 1"+tempRGBA.slice(-1));
+				rgbaColorI++;
+			}
+			
+			// Dados dos Graficos
+			var listUtilizador = []; // Lista de Utilizadores
+			var listPagar = []; // Lista de cafes pagos
+			var listBeber = []; // Lista de cafes bebeu
+			for(var estatisticasI = 0; estatisticasI < estatisticas.length; estatisticasI++) {
+				listUtilizador.push(estatisticas[estatisticasI].id);
+				listPagar.push(estatisticas[estatisticasI].pagar);
+				listBeber.push(estatisticas[estatisticasI].beber);
+			}
+			
+			var ctx = document.getElementById("myChart").getContext('2d');
+			var myChart = new Chart(ctx, {
+				type: 'bar',
+				data: {
+					labels: listUtilizador,
+					datasets: [
+					/*{
+						label: '# of Votes',
+						data: [12, 19, 3, 5, 2],
+						backgroundColor: [
+							'rgba(255, 99, 132, 0.2)',
+							'rgba(54, 162, 235, 0.2)',
+							'rgba(255, 206, 86, 0.2)',
+							'rgba(75, 192, 192, 0.2)',
+							'rgba(153, 102, 255, 0.2)',
+							'rgba(255, 159, 64, 0.2)'
+						],
+						borderColor: [
+							'rgba(255,99,132,1)',
+							'rgba(54, 162, 235, 1)',
+							'rgba(255, 206, 86, 1)',
+							'rgba(75, 192, 192, 1)',
+							'rgba(153, 102, 255, 1)',
+							'rgba(255, 159, 64, 1)'
+						],
+						borderWidth: 1
+					},*/
+					{
+						label: '# Bebeu',
+						data: listBeber,
+						backgroundColor: rgbaBackgroundColor,
+						borderColor: rgbaBorderColor,
+						borderWidth: 1
+					},
+					{
+						label: '# Pagou',
+						data: listPagar,
+						backgroundColor: rgbaBackgroundColor,
+						borderColor: rgbaBorderColor,
+						borderWidth: 1
+					}]
+				},
+				options: {
+					responsive: true, 
+					maintainAspectRatio: false,
+					scales: {
+						yAxes: [{
+							ticks: {
+								beginAtZero:true
+							}
+						}]
+					}
+				}
+			});
+		}
+	</script>
+	
+</body>
+
+</html>
